@@ -138,6 +138,55 @@ The acceptance policy is selected using calibration data. Fields that do not
 meet the target reliability are routed to human review or abstention rather
 than being silently automated.
 
+
+## Quantitative results
+
+### Evaluation protocol
+
+The 626 labelled SROIE receipts were split before policy selection into a
+development set (375 receipts), a calibration set (125 receipts), and a
+held-out test set (126 receipts). The raw extractor was measured on the
+development set. Confidence thresholds were selected only on the calibration
+set; the test set was used once for the final selective-automation evaluation.
+
+Field accuracy below is a normalized exact match against the SROIE label. A
+missing field counts as incorrect.
+
+### Raw extraction baseline — development split
+
+| Field | Labelled fields | Accuracy | Extraction coverage |
+| --- | ---: | ---: | ---: |
+| Company | 375 | 54.1% | 99.5% |
+| Address | 375 | 17.9% | 98.1% |
+| Date | 375 | 65.6% | 72.5% |
+| Total | 373 | 56.8% | 99.7% |
+| **Overall** | **1,498** | **48.6%** | **92.5%** |
+
+This baseline demonstrates why returning every extraction automatically would
+be unsafe, particularly for long addresses and OCR-sensitive amounts.
+
+### Selective automation — held-out test split
+
+The policy was calibrated with an 80% target selective accuracy and a minimum
+of 15 accepted fields. Only the **date** field met this target at useful
+volume, so its acceptance threshold is `0.61`. Automatic acceptance is
+disabled for company, address, and total; they go to review or abstention.
+
+| Outcome | Fields | Rate |
+| --- | ---: | ---: |
+| Automatically accepted | 80 | 15.9% |
+| Correct among accepted | 71 / 80 | **88.8% selective accuracy** |
+| Sent to human review | 378 | 75.1% |
+| Abstained (left blank) | 45 | 8.9% |
+| **Total labelled fields** | **503** | **100.0%** |
+
+All 80 automatically accepted fields were dates. This corresponds to 63.5%
+date coverage on the held-out test set, with 71 correct dates out of 80
+accepted. The result illustrates the intended trade-off: the current system
+automates less work, but the work it does automate is substantially more
+reliable. The baseline and selective figures use different splits, so they
+should not be treated as a direct like-for-like accuracy comparison.
+
 ## What already existed vs. what I built
 
 ### Reused components
