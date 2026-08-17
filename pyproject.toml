@@ -1,0 +1,24 @@
+[project]
+name = "trustextract"
+version = "0.1.0"
+description = "Confidence-aware receipt information extraction"
+requires-python = ">=3.10"
+dependencies = [
+  "kagglehub>=0.3.0",
+  "rapidocr-onnxruntime>=1.2.3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+plots = ["matplotlib>=3.8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pipeline"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

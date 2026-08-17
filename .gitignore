@@ -1,0 +1,14 @@
+# Data and generated artefacts
+data/
+artifacts/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Local editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
