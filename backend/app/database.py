@@ -150,6 +150,14 @@ def get_document(database_path: Path, document_id: int) -> dict[str, Any] | None
     return _document_from_rows(document, fields)
 
 
+def get_document_storage_path(database_path: Path, document_id: int) -> str | None:
+    """Return the persisted upload path for one document without exposing all data files."""
+
+    with connection(database_path) as database:
+        row = database.execute("SELECT stored_path FROM documents WHERE id = ?", (document_id,)).fetchone()
+    return str(row["stored_path"]) if row is not None else None
+
+
 def list_documents(database_path: Path, *, limit: int = 50) -> list[dict[str, Any]]:
     with connection(database_path) as database:
         documents = database.execute(

@@ -110,6 +110,16 @@ function renderDocument(documentRecord) {
         <h2 title="${escapeHtml(documentRecord.original_filename)}">${escapeHtml(documentRecord.original_filename)}</h2>
         <p class="document-meta">${documentRecord.ocr_line_count} OCR lines · ${escapeHtml(created)}</p>
       </div>
+    </div>
+    <figure class="receipt-preview">
+      <img src="${API_BASE}/documents/${documentRecord.id}/image" alt="Uploaded receipt for document ${documentRecord.id}" />
+      <figcaption>
+        <span>Uploaded receipt image</span>
+        <a href="${API_BASE}/documents/${documentRecord.id}/image" target="_blank" rel="noreferrer">Open full image</a>
+      </figcaption>
+    </figure>
+    <div class="overview-section">
+      <p class="eyebrow">Decision overview</p>
       <div class="document-overview">${makeOverview(documentRecord)}</div>
     </div>
     <div class="field-grid" id="field-grid"></div>

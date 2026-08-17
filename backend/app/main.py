@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from backend.app.config import DATABASE_PATH, OCR_CACHE_DIR, POLICY_FILE, UPLOADS_DIR
 from backend.app.database import (
@@ -16,6 +17,7 @@ from backend.app.database import (
     complete_review,
     document_count,
     get_document,
+    get_document_storage_path,
     initialize_database,
     list_documents,
     review_queue,
@@ -109,6 +111,21 @@ def document(document_id: int) -> dict:
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     return result
+
+
+@app.get("/documents/{document_id}/image")
+def document_image(document_id: int) -> FileResponse:
+    """Serve only the image associated with the requested persisted document."""
+
+    stored_path = get_document_storage_path(DATABASE_PATH, document_id)
+    if stored_path is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    image_path = Path(stored_path)
+    if not image_path.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stored image not found")
+    # Do not set a download filename: the endpoint is used both by the inline
+    # preview and by the "Open full image" link in the review workspace.
+    return FileResponse(image_path)
 
 
 @app.get("/metrics", response_model=MetricsResponse)

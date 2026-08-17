@@ -43,3 +43,25 @@ def test_review_api_lists_and_completes_pending_field(tmp_path, monkeypatch):
         assert response.status_code == 200
         assert response.json()["human_value"] == "20.80"
         assert client.get("/reviews").json() == []
+
+
+def test_document_image_endpoint_serves_only_the_requested_upload(tmp_path, monkeypatch):
+    database_path = tmp_path / "trustextract.db"
+    upload_path = tmp_path / "uploads" / "receipt.jpg"
+    upload_path.parent.mkdir()
+    upload_path.write_bytes(b"image-bytes")
+    monkeypatch.setattr(api_main, "DATABASE_PATH", database_path)
+    monkeypatch.setattr(api_main, "UPLOADS_DIR", tmp_path / "uploads")
+
+    with TestClient(api_main.app) as client:
+        document = store_processed_document(
+            database_path,
+            original_filename="receipt.jpg",
+            stored_path=str(upload_path),
+            ocr_line_count=1,
+            fields=[],
+        )
+        response = client.get(f"/documents/{document['id']}/image")
+
+    assert response.status_code == 200
+    assert response.content == b"image-bytes"
