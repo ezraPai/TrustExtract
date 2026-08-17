@@ -1,5 +1,6 @@
 import json
 
+from backend.app.config import POLICY_FILE
 from backend.app.policy_loader import load_field_policies
 
 
@@ -23,3 +24,15 @@ def test_loads_field_specific_calibrated_policy(tmp_path):
 
     assert policies["date"].accept_threshold == 0.61
     assert policies["address"].accept_threshold == 1.0
+
+
+def test_packaged_policy_is_available_without_experiment_artifacts():
+    """A fresh clone needs this file to process uploads immediately."""
+
+    assert POLICY_FILE.name == "calibrated_policy.json"
+    assert POLICY_FILE.parent.name == "config"
+
+    policies = load_field_policies(POLICY_FILE)
+
+    assert policies["date"].accept_threshold == 0.61
+    assert policies["company"].accept_threshold == 1.0

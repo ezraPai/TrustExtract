@@ -14,7 +14,8 @@ def load_field_policies(policy_path: Path) -> dict[str, ThresholdPolicy]:
 
     if not policy_path.is_file():
         raise FileNotFoundError(
-            f"Calibrated policy not found: {policy_path}. Run scripts/calibrate_thresholds.py first."
+            f"Calibrated policy not found: {policy_path}. "
+            "Restore config/calibrated_policy.json or set TRUSTEXTRACT_POLICY_FILE."
         )
     payload = json.loads(policy_path.read_text(encoding="utf-8"))
     if "field_policies" in payload:
@@ -29,4 +30,3 @@ def load_field_policies(policy_path: Path) -> dict[str, ThresholdPolicy]:
         policy = ThresholdPolicy(**payload["policy"])
         return {field: policy for field in TARGET_FIELDS}
     raise ValueError("Policy JSON does not contain policy or field_policies")
-

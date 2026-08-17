@@ -10,7 +10,8 @@ abstain.
 ### Prerequisites
 
 - Python 3.10 or newer.
-- An internet connection the first time SROIE is downloaded through KaggleHub.
+- An internet connection to install Python dependencies. SROIE is needed only
+  when reproducing the optional experiment, not when using the application.
 - Any modern browser. The application has been tested with Chrome/Edge; it is
   not tied to a specific operating system.
 
@@ -48,30 +49,12 @@ The calibration-chart script additionally needs Matplotlib on any platform:
 python -m pip install -e ".[plots]"
 ```
 
-### 2. Prepare the dataset and calibrated policy
+### 2. Start the application
 
-The project uses KaggleHub to obtain SROIE without manually copying the
-dataset into the repository:
-
-```text
-python scripts/inspect_dataset.py --download-kaggle --show 5
-```
-
-To reproduce the calibrated policy from scratch, run:
-
-```text
-python scripts/run_extraction.py --split development
-python scripts/score_confidence.py
-
-python scripts/run_extraction.py --split calibration --output artifacts/phase2_calibration_predictions.json
-python scripts/score_confidence.py --predictions artifacts/phase2_calibration_predictions.json --output artifacts/phase4_calibration_confidence.json
-python scripts/calibrate_thresholds.py
-```
-
-This produces `artifacts/phase6_calibrated_policy.json`, which the backend
-uses when processing uploaded receipts.
-
-### 3. Start the application
+The calibrated application policy is tracked at
+`config/calibrated_policy.json`. It is loaded automatically, so a fresh clone
+can upload and process a receipt without downloading SROIE or regenerating
+the experiment artifacts.
 
 Start the FastAPI backend in one activated terminal:
 
@@ -98,7 +81,35 @@ http://127.0.0.1:8000/docs
 ```
 
 Uploaded receipt images are stored in `data/uploads/`; extraction results and
-human review corrections are stored in `data/trustextract.db`.
+human review corrections are stored in `data/trustextract.db`. These local
+runtime files remain ignored by Git.
+
+### 3. Optional: reproduce the dataset experiment
+
+The project uses KaggleHub to obtain SROIE without manually copying the
+dataset into the repository:
+
+```text
+python scripts/inspect_dataset.py --download-kaggle --show 5
+```
+
+To reproduce the calibrated policy from scratch, run:
+
+```text
+python scripts/run_extraction.py --split development
+python scripts/score_confidence.py
+
+python scripts/run_extraction.py --split calibration --output artifacts/phase2_calibration_predictions.json
+python scripts/score_confidence.py --predictions artifacts/phase2_calibration_predictions.json --output artifacts/phase4_calibration_confidence.json
+python scripts/calibrate_thresholds.py
+```
+
+This writes the detailed calibration artifact to
+`artifacts/phase6_calibrated_policy.json`. Large datasets, OCR caches, and
+experiment artifacts remain ignored by Git. The running application uses the
+reviewed, tracked `config/calibrated_policy.json`; set
+`TRUSTEXTRACT_POLICY_FILE` only when deliberately testing an alternative
+policy.
 
 ### Cross-platform reviewer note
 

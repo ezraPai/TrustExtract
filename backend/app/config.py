@@ -21,6 +21,5 @@ UPLOADS_DIR = project_path("TRUSTEXTRACT_UPLOADS_DIR", PROJECT_ROOT / "data" / "
 OCR_CACHE_DIR = project_path("TRUSTEXTRACT_OCR_CACHE_DIR", PROJECT_ROOT / "artifacts" / "ocr")
 POLICY_FILE = project_path(
     "TRUSTEXTRACT_POLICY_FILE",
-    PROJECT_ROOT / "artifacts" / "phase6_calibrated_policy.json",
+    PROJECT_ROOT / "config" / "calibrated_policy.json",
 )
-

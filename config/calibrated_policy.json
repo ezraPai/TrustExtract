@@ -1,0 +1,26 @@
+{
+  "policy_version": "1.0",
+  "selection_split": "calibration",
+  "selection_method": "field_specific_safety_first",
+  "target_selective_accuracy": 0.8,
+  "min_accepted": 15,
+  "notes": "Packaged application policy. Derived from Phase 6 calibration; detailed curves remain generated artifacts.",
+  "field_policies": {
+    "company": {
+      "review_threshold": 0.6,
+      "accept_threshold": 1.0
+    },
+    "address": {
+      "review_threshold": 0.6,
+      "accept_threshold": 1.0
+    },
+    "date": {
+      "review_threshold": 0.6,
+      "accept_threshold": 0.61
+    },
+    "total": {
+      "review_threshold": 0.6,
+      "accept_threshold": 1.0
+    }
+  }
+}
