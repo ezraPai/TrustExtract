@@ -7,9 +7,20 @@ abstain.
 
 ## How to run
 
-### 1. Create the environment
+### Prerequisites
 
-From Windows PowerShell in the project root:
+- Python 3.10 or newer.
+- An internet connection the first time SROIE is downloaded through KaggleHub.
+- Any modern browser. The application has been tested with Chrome/Edge; it is
+  not tied to a specific operating system.
+
+### 1. Create and activate the environment
+
+All application code uses relative paths, `pathlib`, FastAPI, SQLite, and a
+browser frontend, so it runs on Windows, macOS, and Linux. Only the shell
+commands used to create and activate the virtual environment differ.
+
+#### Windows (PowerShell)
 
 ```powershell
 .\scripts\setup_env.ps1
@@ -22,24 +33,39 @@ If PowerShell blocks the setup script, use:
 powershell -ExecutionPolicy Bypass -File .\scripts\setup_env.ps1
 ```
 
+#### macOS / Linux (bash or zsh)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+The calibration-chart script additionally needs Matplotlib on any platform:
+
+```bash
+python -m pip install -e ".[plots]"
+```
+
 ### 2. Prepare the dataset and calibrated policy
 
 The project uses KaggleHub to obtain SROIE without manually copying the
 dataset into the repository:
 
-```powershell
-python scripts\inspect_dataset.py --download-kaggle --show 5
+```text
+python scripts/inspect_dataset.py --download-kaggle --show 5
 ```
 
 To reproduce the calibrated policy from scratch, run:
 
-```powershell
-python scripts\run_extraction.py --split development
-python scripts\score_confidence.py
+```text
+python scripts/run_extraction.py --split development
+python scripts/score_confidence.py
 
-python scripts\run_extraction.py --split calibration --output artifacts\phase2_calibration_predictions.json
-python scripts\score_confidence.py --predictions artifacts\phase2_calibration_predictions.json --output artifacts\phase4_calibration_confidence.json
-python scripts\calibrate_thresholds.py
+python scripts/run_extraction.py --split calibration --output artifacts/phase2_calibration_predictions.json
+python scripts/score_confidence.py --predictions artifacts/phase2_calibration_predictions.json --output artifacts/phase4_calibration_confidence.json
+python scripts/calibrate_thresholds.py
 ```
 
 This produces `artifacts/phase6_calibrated_policy.json`, which the backend
@@ -47,15 +73,15 @@ uses when processing uploaded receipts.
 
 ### 3. Start the application
 
-Start the FastAPI backend in one terminal:
+Start the FastAPI backend in one activated terminal:
 
-```powershell
+```text
 python -m uvicorn backend.app.main:app --reload
 ```
 
-Start the separate frontend in a second terminal:
+Start the separate frontend in a second activated terminal:
 
-```powershell
+```text
 python -m http.server 5173 --directory frontend
 ```
 
@@ -73,6 +99,14 @@ http://127.0.0.1:8000/docs
 
 Uploaded receipt images are stored in `data/uploads/`; extraction results and
 human review corrections are stored in `data/trustextract.db`.
+
+### Cross-platform reviewer note
+
+After activation, use `python -m ...` commands rather than calling an
+operating-system-specific executable directly. For example, do not depend on
+the Windows-only path `.venv\Scripts\python.exe`; macOS and Linux use
+`.venv/bin/python`. The README commands above deliberately avoid this
+difference.
 
 ## What I chose and why
 
