@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="TrustExtract confidence-aware receipt extraction dashboard" />
+    <title>TrustExtract</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="TrustExtract dashboard">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>Trust<span>Extract</span></span>
+      </a>
+      <div class="topbar-meta">
+        <span class="policy-badge">Calibrated selective policy</span>
+        <span class="connection-state" id="connection-state"><i></i> Checking API</span>
+      </div>
+    </header>
+
+    <main id="top" class="page-shell">
+      <section class="intro">
+        <div>
+          <p class="eyebrow">Confidence-aware document understanding</p>
+          <h1>Automate only what the system can justify.</h1>
+          <p class="intro-copy">
+            Upload a receipt to extract structured fields, inspect the confidence evidence, and route uncertain values through human review.
+          </p>
+        </div>
+        <div class="decision-legend" aria-label="Decision meanings">
+          <span><i class="legend-dot accept"></i>Accept</span>
+          <span><i class="legend-dot review"></i>Review</span>
+          <span><i class="legend-dot abstain"></i>Abstain</span>
+        </div>
+      </section>
+
+      <div class="dashboard-grid">
+        <aside class="sidebar">
+          <section class="panel upload-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">New document</p>
+                <h2>Upload a receipt</h2>
+              </div>
+            </div>
+            <form id="upload-form">
+              <label class="dropzone" for="receipt-file" id="dropzone">
+                <span class="upload-icon" aria-hidden="true"></span>
+                <strong>Choose a receipt image</strong>
+                <span>JPG, PNG, TIFF</span>
+                <small id="selected-file">No file selected</small>
+              </label>
+              <input id="receipt-file" name="file" type="file" accept=".jpg,.jpeg,.png,.tif,.tiff,image/jpeg,image/png,image/tiff" required />
+              <button class="primary-button" id="upload-button" type="submit">Process receipt</button>
+            </form>
+            <p class="form-status" id="upload-status" role="status"></p>
+          </section>
+
+          <section class="panel policy-panel">
+            <p class="eyebrow">Current policy</p>
+            <h2>Safety first</h2>
+            <div class="policy-row">
+              <span class="field-name">Date</span>
+              <span class="state-tag accept">Automatic acceptance enabled</span>
+            </div>
+            <div class="policy-row">
+              <span class="field-name">Company, address, total</span>
+              <span class="state-tag review">Human verification required</span>
+            </div>
+            <p class="policy-copy">Policies are selected from calibration data, not adjusted per uploaded receipt.</p>
+          </section>
+
+          <section class="panel metrics-panel">
+            <p class="eyebrow">Workspace</p>
+            <div class="metric-grid">
+              <div><strong id="metric-documents">0</strong><span>Documents</span></div>
+              <div><strong id="metric-accepted">0</strong><span>Accepted fields</span></div>
+              <div><strong id="metric-review">0</strong><span>Pending reviews</span></div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="workspace">
+          <section class="panel document-panel" id="document-panel">
+            <div class="empty-state" id="document-empty">
+              <span class="empty-mark" aria-hidden="true"></span>
+              <h2>Receipt results will appear here</h2>
+              <p>Upload an image to run OCR, extraction, confidence scoring, and the calibrated decision policy.</p>
+            </div>
+            <div id="document-content" hidden></div>
+          </section>
+
+          <section class="panel queue-panel">
+            <div class="queue-header">
+              <div>
+                <p class="eyebrow">Human review queue</p>
+                <h2>Fields awaiting verification</h2>
+              </div>
+              <span class="queue-count" id="queue-count">0 pending</span>
+            </div>
+            <div class="queue-list" id="review-queue">
+              <p class="queue-empty">No pending fields.</p>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <template id="field-card-template">
+      <article class="field-card">
+        <div class="field-card-top">
+          <div>
+            <p class="field-label"></p>
+            <p class="field-value"></p>
+          </div>
+          <span class="decision-tag"></span>
+        </div>
+        <div class="confidence-row">
+          <span>Confidence</span>
+          <strong class="confidence-value"></strong>
+        </div>
+        <div class="confidence-track"><i class="confidence-bar"></i></div>
+        <dl class="evidence-grid">
+          <div><dt>OCR</dt><dd class="evidence-ocr"></dd></div>
+          <div><dt>Format</dt><dd class="evidence-format"></dd></div>
+          <div><dt>Context</dt><dd class="evidence-context"></dd></div>
+        </dl>
+        <p class="rule-text"></p>
+        <div class="review-area"></div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>

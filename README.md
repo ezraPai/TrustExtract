@@ -1,209 +1,130 @@
 # TrustExtract
 
-TrustExtract is a confidence-aware receipt extraction demo built around the
-SROIE dataset. It extracts `company`, `address`, `date`, and `total`, then
-decides whether to **accept**, send a value for **human review**, or
-**abstain**.
+TrustExtract is a confidence-aware receipt extraction system. It extracts four
+receipt fields (`company`, `address`, `date`, and `total`) and decides, for
+each field, whether to accept it automatically, send it for human review, or
+abstain.
 
-## Environment setup
+## How to run
 
-On Windows PowerShell, create and populate the project environment with:
+### 1. Create the environment
+
+From Windows PowerShell in the project root:
 
 ```powershell
 .\scripts\setup_env.ps1
 .\.venv\Scripts\Activate.ps1
 ```
 
-If PowerShell blocks local scripts, run the first command without changing
-your machine-wide policy:
+If PowerShell blocks the setup script, use:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup_env.ps1
 ```
 
-The script creates `.venv` and installs the project, KaggleHub, and test
-dependencies. Use the environment's interpreter for all project commands:
+### 2. Prepare the dataset and calibrated policy
+
+The project uses KaggleHub to obtain SROIE without manually copying the
+dataset into the repository:
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\inspect_dataset.py --download-kaggle --show 5
+python scripts\inspect_dataset.py --download-kaggle --show 5
 ```
 
-## Phase 1: dataset setup
-
-The quickest setup uses KaggleHub. It downloads the dataset once into its
-managed local cache (not into this repository), then the inspector discovers
-the image/annotation layout automatically:
+To reproduce the calibrated policy from scratch, run:
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\inspect_dataset.py --download-kaggle --show 5
+python scripts\run_extraction.py --split development
+python scripts\score_confidence.py
+
+python scripts\run_extraction.py --split calibration --output artifacts\phase2_calibration_predictions.json
+python scripts\score_confidence.py --predictions artifacts\phase2_calibration_predictions.json --output artifacts\phase4_calibration_confidence.json
+python scripts\calibrate_thresholds.py
 ```
 
-On its first run KaggleHub may ask you to authenticate with Kaggle, depending
-on your local Kaggle configuration. The dataset identifier is
-`urbikn/sroie-datasetv2`.
+This produces `artifacts/phase6_calibrated_policy.json`, which the backend
+uses when processing uploaded receipts.
 
-Alternatively, place a labelled SROIE dataset beneath `data/sroie/`. The
-loader supports the common layouts below:
+### 3. Start the application
+
+Start the FastAPI backend in one terminal:
+
+```powershell
+python -m uvicorn backend.app.main:app --reload
+```
+
+Start the separate frontend in a second terminal:
+
+```powershell
+python -m http.server 5173 --directory frontend
+```
+
+Open the application at:
 
 ```text
-data/sroie/
-  train/
-    img/                  # or images/
-    entities/             # or annotations/, labels/, or entity/
+http://127.0.0.1:5173
 ```
 
-Each annotation must be JSON (either a `.json` file or JSON stored in a
-`.txt` file) with these fields:
-
-```json
-{
-  "company": "ACME STORE",
-  "address": "12 Example Street",
-  "date": "2025-01-31",
-  "total": "18.50"
-}
-```
-
-Run the inspector after copying the dataset:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\inspect_dataset.py --data-dir data/sroie --show 5
-```
-
-It discovers valid image/annotation pairs, prints representative ground truth,
-and writes a deterministic development/calibration/test split to
-`artifacts/dataset_splits.json`.
-
-For a different folder arrangement, explicitly provide the two directories:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\inspect_dataset.py `
-  --images-dir data/sroie/train/img `
-  --annotations-dir data/sroie/train/entities
-```
-
-The dataset itself is intentionally ignored by Git. KaggleHub still needs a
-local cache while the code runs, but you do not need to download, unzip, or
-commit it manually.
-
-## Phase 2: OCR and baseline extraction
-
-Phase 2 uses RapidOCR to produce recognised receipt lines, bounding boxes,
-and OCR confidence. Its transparent rules extract four fields and record the
-source lines and rule used for each prediction.
-
-Run five development receipts first:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\run_extraction.py --split development --limit 5
-```
-
-This writes OCR caches to `artifacts/ocr/` and predictions to
-`artifacts/phase2_development_predictions.json`. Re-running the same command
-uses the cache, so it is fast while you improve the extraction rules.
-
-Once the output looks sensible, run the complete development split:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\run_extraction.py --split development
-```
-
-## Phase 3: baseline evaluation
-
-Evaluate the saved development predictions with field-aware normalization:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\evaluate_baseline.py
-```
-
-The report in `artifacts/phase3_baseline_metrics.json` includes per-field and
-overall exact normalized-match accuracy, coverage, and representative errors.
-Use the development split to improve rules. Keep the calibration and test
-splits untouched for threshold selection and final reporting.
-
-## Phase 4: confidence scoring
-
-Attach an explainable reliability score to every extracted field:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\score_confidence.py
-```
-
-The output in `artifacts/phase4_development_confidence.json` contains the
-combined score and its components: OCR quality, format validity, and
-receipt-layout/context evidence. This is intentionally a heuristic score—not
-a calibrated probability. Phase 5–6 will select policy thresholds using the
-calibration split and evaluate selective accuracy on the test split.
-
-## Phase 5: Accept / Review / Abstain policy
-
-Apply the initial three-way workflow policy to the development confidence
-scores:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\apply_policy.py
-```
-
-The initial operating policy is deliberately provisional:
+The backend API documentation is available at:
 
 ```text
-confidence >= 0.85  → ACCEPT: provide automation_value
-0.60 to < 0.85      → REVIEW: provide review_candidate only
-confidence < 0.60   → ABSTAIN: provide neither value
+http://127.0.0.1:8000/docs
 ```
 
-The output in `artifacts/phase5_development_decisions.json` keeps the raw
-candidate and evidence for auditability, but only an accepted prediction is
-available in `automation_value`. Phase 6 will choose the final thresholds on
-the calibration split, not this development output.
+Uploaded receipt images are stored in `data/uploads/`; extraction results and
+human review corrections are stored in `data/trustextract.db`.
 
-## Phase 6: calibration and selective evaluation
+## What I chose and why
 
-Phase 6 selects the automation threshold from the **calibration** split, then
-uses the **test** split exactly once for final coverage and selective-accuracy
-reporting. Do not choose thresholds from test results.
+I chose **Option 1: Document Understanding with Confidence** using the
+**SROIE receipt dataset**.
 
-Create calibration predictions and confidence scores:
+The goal is not simply to extract text from a receipt. The central question is
+whether the system should trust an extracted value enough to automate it.
 
-```powershell
-.\.venv\Scripts\python.exe scripts\run_extraction.py --split calibration --output artifacts/phase2_calibration_predictions.json
-.\.venv\Scripts\python.exe scripts\score_confidence.py --predictions artifacts/phase2_calibration_predictions.json --output artifacts/phase4_calibration_confidence.json
+The pipeline is:
+
+```text
+Receipt image -> OCR -> field extraction -> confidence evidence
+-> Accept / Review / Abstain -> SQLite -> human correction
 ```
 
-Choose safe field-specific accept thresholds. A field is only automated if it
-reaches the target 80% selective accuracy on calibration data with at least 15
-accepted labelled fields. Otherwise, automatic acceptance is disabled for that
-field and values are routed to review or abstention:
+SROIE is a focused extraction task with ground truth for company, address,
+date, and total. It made it possible to spend the limited project time on
+selective automation and trustworthy decision-making rather than training a
+large document model from scratch.
 
-```powershell
-.\.venv\Scripts\python.exe scripts\calibrate_thresholds.py
-```
+Confidence is based on three explainable signals:
 
-This creates `artifacts/phase6_calibrated_policy.json`, including a separate
-coverage-versus-selective-accuracy curve per field and a clear flag for every
-field that could not meet the 80% target.
+- OCR quality for the source text.
+- Field-format validity, such as a valid date or monetary value.
+- Context and layout evidence, such as a value aligned with a `TOTAL` label.
 
-Then create test predictions/confidence and evaluate the already-fixed policy:
+The acceptance policy is selected using calibration data. Fields that do not
+meet the target reliability are routed to human review or abstention rather
+than being silently automated.
 
-```powershell
-.\.venv\Scripts\python.exe scripts\run_extraction.py --split test --output artifacts/phase2_test_predictions.json
-.\.venv\Scripts\python.exe scripts\score_confidence.py --predictions artifacts/phase2_test_predictions.json --output artifacts/phase4_test_confidence.json
-.\.venv\Scripts\python.exe scripts\evaluate_selective.py
-```
+## What already existed vs. what I built
 
-The final test metrics are in `artifacts/phase6_test_selective_metrics.json`;
-the corresponding workflow decisions are in
-`artifacts/phase6_test_decisions.json`.
+### Reused components
 
-### Calibration chart for slides
+- **SROIE**: public receipt images and field annotations.
+- **KaggleHub**: dataset download and caching.
+- **RapidOCR**: pretrained OCR engine that provides text, bounding boxes, and
+  OCR confidence.
+- **FastAPI, SQLite, and browser APIs**: application infrastructure.
 
-Install the optional plotting dependency once, then create PNG and SVG copies
-of the calibration-only coverage-versus-selective-accuracy chart:
+### Built for this project
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -e ".[plots]"
-.\.venv\Scripts\python.exe scripts\plot_calibration_curve.py
-```
-
-The chart highlights the selected date threshold and clearly states which
-fields were withheld because they did not reach the calibration target.
+- Dataset inspection, labelled image/annotation pairing, and reproducible
+  development, calibration, and test splits.
+- Transparent rule-based extraction of company, address, date, and total.
+- OCR caching, field-aware normalization, and baseline evaluation.
+- Explainable field-level confidence scoring.
+- Calibration-driven selective automation policy and held-out evaluation.
+- Coverage-versus-selective-accuracy calibration plots.
+- FastAPI endpoints for receipt upload, extraction, persistence, and metrics.
+- SQLite schema for documents, field predictions, confidence evidence,
+  decisions, and human corrections.
+- Separate frontend for upload, extraction evidence, decision display, and a
+  persisted human-review queue.
